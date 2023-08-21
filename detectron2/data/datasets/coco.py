@@ -146,7 +146,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 
     dataset_dicts = []
 
-    ann_keys = ["iscrowd", "bbox", "keypoints", "category_id"] + (extra_annotation_keys or [])
+    ann_keys = ["iscrowd", "bbox", "keypoints", "category_id", "gaze_py"] + (extra_annotation_keys or [])
 
     num_instances_without_valid_segmentation = 0
 
@@ -201,6 +201,10 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
                         # add 0.5 to convert to floating point coordinates.
                         keypts[idx] = v + 0.5
                 obj["keypoints"] = keypts
+
+            gazepys = anno.get("gaze_py", None)
+            if gazepys: # list[float]
+                obj["gaze_py"] = gazepys
 
             obj["bbox_mode"] = BoxMode.XYWH_ABS
             if id_map:
@@ -402,6 +406,9 @@ def convert_to_coco_dict(dataset_name):
                 else:
                     num_keypoints = sum(kp > 0 for kp in keypoints[2::3])
 
+            if "gaze_py" in annotation:
+                gazes = annotation["gaze_py"]
+
             # COCO requirement:
             #   linking annotations to images
             #   "id" field must start with 1
@@ -424,6 +431,9 @@ def convert_to_coco_dict(dataset_name):
                     if not isinstance(counts, str):
                         # make it json-serializable
                         seg["counts"] = counts.decode("ascii")
+            
+            if "gaze_py" in annotation:
+                coco_annotation["gaze_py"] = [round(float(x), 4) for x in gazes]
 
             coco_annotations.append(coco_annotation)
 
